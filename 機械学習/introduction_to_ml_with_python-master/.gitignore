@@ -1,0 +1,5 @@
+*.pyc
+*.swp
+.ipynb_checkpoints/
+introduction_to_ml_with_python-master/
+cache/
