@@ -67,52 +67,34 @@ def predict(network, x):
 
     return y
 
-def forward(network, x):
-    W1, W2, W3 = network['W1'], network['W2'], network['W3'] 
-    b1, b2, b3 = network['b1'], network['b2'], network['b3'] 
+def gradient_descent(f, init_x, lr=0.01, step_num=100):
+    x = init_x
 
-    def accuracy(self, x, t):
-        y = self.predict(x)
-        y = np.argmax(y, axis=1)
-        t = np.argmax(t, axis=1)
-        
-        accuracy = np.sum(y == t) / float(x.shape[0])
-        return accuracy
-    
-    def numerical_gradient(self, x, t):
-        loss_W = lambda W: self.loss(x, t)
-        grads = {}
-        grads['W1'] = numerical_gradient(loss_W, self.params['W1'])
-        grads['b1'] = numerical_gradient(loss_W, self.params['b1'])
-        grads['W2'] = numerical_gradient(loss_W, self.params['W2'])
-        grads['b2'] = numerical_gradient(loss_W, self.params['b2'])
+    for i in range(step_num):
+        grad = numerical_gradient(f, x)
+        x -= lr * grad
 
-        return grads
-    
-    def gradient(self, x, t):
-        W1, W2 = self.params['W1'], self.params['W2']
-        b1, b2 = self.params['b1'], self.params['b2']
-        grads = {}
-        
-        batch_num = x.shape[0]
-        
-        # forward
-        a1 = np.dot(x, W1) + b1
-        z1 = sigmoid(a1)
-        a2 = np.dot(z1, W2) + b2
-        y = softmax(a2)
-        
-        # backward
-        dy = (y - t) / batch_num
-        grads['W2'] = np.dot(z1.T, dy)
-        grads['b2'] = np.sum(dy, axis=0)
-        
-        dz1 = np.dot(dy, W2.T)
-        da1 = sigmoid_grad(a1) * dz1
-        grads['W1'] = np.dot(x.T, da1)
-        grads['b1'] = np.sum(da1, axis=0)
+        return x
+def numerical_diff(f, x):
+    h = 1e-4
+    return (f(x+h) - f(x-h)) / (2*h)
 
-        return grads
+class simpleNet:
+
+    def __init__(self):
+        # 重みの初期化
+        self.W = np.random.randn(2,3)
+
+    def predict(self, x):
+        return np.dot(x, self.W)
+                
+    # x:入力データ, t:教師データ
+    def loss(self, x, t):
+        z = self.predict(x)
+        y = softmax(z)
+        loss =  cross_entropy_error(y, t)
+
+        return loss
 
 class TwoLayerNet:
 
@@ -188,6 +170,68 @@ class TwoLayerNet:
 
 
 #---------------------------------------------------
+def main():     # テストデータで評価
+    (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
+    train_loss_list = []
+    train_acc_list = []
+    test_acc_list = []
+
+    # Hyper parameters
+    iters_num = 10000
+    train_size = x_train.shape[0]
+    batch_size = 100
+    learning_rate = 0.1
+
+    iter_per_epoch = max(train_size / batch_size, 1)
+
+    network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
+   
+    for i in range(iters_num):
+        if i % 10 == 0: pass
+    #        print('i:', i)
+        batch_mask = np.random.choice(train_size, batch_size)
+        x_batch = x_train[batch_mask]
+        t_batch = t_train[batch_mask]
+    
+        # 勾配の計算
+        # grad = network.numerical_gradient(x_batch, t_batch)
+        grad = network.gradient(x_batch, t_batch)
+
+        # Parameters update
+        for key in ('W1', 'b1', 'W2', 'b2'):
+            network.params[key] -= learning_rate * grad[key]
+        
+        # 学習経過の記録
+        loss = network.loss(x_batch, t_batch)
+        train_loss_list.append(loss)
+    
+        # 1エポックごとに認識精度を計算
+        if i % iter_per_epoch == 0:
+            train_acc = network.accuracy(x_train, t_train)
+            test_acc = network.accuracy(x_test, t_test)
+            train_acc_list.append(train_acc)
+            test_acc_list.append(test_acc)
+            print("train acc, test acc | " + str(train_acc) + ", " + str(test_acc))
+
+#    print('train_loss_list:', train_loss_list)
+#    with open('train_loss_list.pkl', 'wb') as f:
+#        pickle.dump(train_loss_list,f)
+
+    print('train_acc_list:', train_acc_list)
+    print('test_acc_list:', test_acc_list)
+
+
+    # グラフの描画
+    markers = {'train': 'o', 'test': 's'}
+    x = np.arange(len(train_acc_list))
+    plt.plot(x, train_acc_list, label='train acc')
+    plt.plot(x, test_acc_list, label='test acc', linestyle='--')
+    plt.xlabel("epochs")
+    plt.ylabel("accuracy")
+    plt.ylim(0, 1.0)
+    plt.legend(loc='lower right')
+    plt.show()
+
 def main8():     # ミニバッチ学習の実装 (結果の確認）
     with open('train_loss_list.pkl', 'rb') as f:
         train_loss_list = pickle.load(f)
@@ -199,7 +243,7 @@ def main8():     # ミニバッチ学習の実装 (結果の確認）
     plt.show()
 
 
-def main():     # ミニバッチ学習の実装
+def main7():     # ミニバッチ学習の実装
     (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
     train_loss_list = []
 
@@ -299,6 +343,7 @@ def main2():
     t_batch = t_train[batch_mask]
     print(x_batch)
     print(t_batch)
+
 if __name__ == '__main__':
     start_time = time.time()
     print('Start:', start_time)

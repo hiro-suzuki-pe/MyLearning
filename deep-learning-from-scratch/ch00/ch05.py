@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, time
 sys.path.append(os.pardir)
 from dataset.mnist import load_mnist
 import numpy as np
@@ -199,9 +199,9 @@ def main():
     (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
 
     network = TwolayerNet(input_size=784, hidden_size=50, output_size=10)
-    x_batch = x_train[:3]
-    t_batch = t_train[:3]
-
+    x_batch = x_train[:30]
+    t_batch = t_train[:30]
+    
     grad_numerical = network.numerical_gradient(x_batch, t_batch)
     grad_backprop = network.gradient(x_batch, t_batch)
 
@@ -228,7 +228,6 @@ def main2():     # AddLayerの実装
     orange_price = mul_orange_layer.forward(orange, orange_num)
     all_price = add_apple_orange_layer.forward(apple_price, orange_price)
     price = mul_tax_layer.forward(all_price, tax)
-
  
     # backward
     dprice = 1
@@ -265,4 +264,10 @@ def main1():  # MulLayerの実装
     print(dapple, dapple_num, dtax) # 2.2, 110, 200
 
 if __name__ == '__main__':
+    start_time = time.time()
+    print('Start:', start_time)
     main()
+    end_time = time.time()
+    print('Start: {:.0f} (sec)'.format(start_time))
+    print('End:: {:.0f} (sec)'.format(end_time))
+    print('E-S: {:.2f} (sec)'.format(end_time-start_time))
